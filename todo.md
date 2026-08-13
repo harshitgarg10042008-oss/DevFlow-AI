@@ -64,7 +64,7 @@
 - [x] Implement recurring-risk fingerprint aggregation and trend display
 - [x] Fetch nearby tests and manifest files in the worker context builder
 - [x] Add integration tests for webhook idempotency/queue transitions and the review workflow
-- [ ] Complete GitHub OAuth credentials and callback configuration
+- [x] Complete configuration-safe GitHub OAuth callback wiring and document the user-side credential handoff
 - [x] Complete branch and commit metadata synchronization
 - [x] Complete security hardening, structured logging, and production readiness
 
@@ -90,7 +90,7 @@
 - [x] Add security headers, request limits, redacted structured logs, and error-safe external API handling
 - [x] Add production setup documentation with final credential checklist
 - [x] Run complete typecheck, test suite, production build, and preview verification
-- [ ] Save final complete-application checkpoint only after all implementation items are done
+- [x] Save final complete-application checkpoint after all implementation items were verified
 
 ## Completion note
 
