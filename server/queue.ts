@@ -5,13 +5,14 @@ import { getFileContent, getPullRequestDiff, getPullRequestFiles } from "./githu
 import { normalizeReviewFindings, runAIReview } from "./ai-reviewer";
 import { publishEvent } from "./events";
 import { architectureModules, deriveFindingLifecycle, findingFingerprint, impactedTests, normalizePolicy, ownerMatches, policyBlocksFindings, selectOwnerRecipientIds } from "./second-release";
-import { latestLifecycleForFingerprint, latestReviewPolicy, listCodeOwners, listLatestLifecycleForRepository, saveArchitectureModules, saveCiCheck, saveDependencyRisk, saveFindingLifecycle } from "./second-release-db";
+import { latestLifecycleForFingerprint, latestReviewPolicy, listCodeOwners, listLatestLifecycleForRepository, saveArchitectureModules, saveCiCheck, saveDependencyRisk, saveFindingLifecycle, saveReviewerAssignment } from "./second-release-db";
 
 export const analysisQueueName = "devflow-analysis";
 const connection = ENV.redisUrl ? { url: ENV.redisUrl, maxRetriesPerRequest: null } : null;
 export const analysisQueue = connection ? new Queue(analysisQueueName, { connection }) : null;
 
 export function deterministicJobId(repositoryId: number, pullRequestNumber: number, headSha: string) { return `analysis:${repositoryId}:pr-${pullRequestNumber}:${headSha}`; }
+export function buildReviewerAssignments(ownerNames: string[], workspaceMembers: Array<{ userId: number; name: string | null; email: string | null }>, pullRequestId: number, repositoryId: number) { return ownerNames.map(owner => { const matchedMember = workspaceMembers.find(member => [member.name, member.email].filter(Boolean).some(value => value!.toLowerCase().replace(/^@/, "") === owner)); return { pullRequestId, repositoryId, owner, userId: matchedMember?.userId, source: "CODEOWNERS" as const, status: matchedMember ? "ASSIGNED" as const : "RECOMMENDED" as const }; }); }
 
 async function processAnalysis(job: Job<{ analysisId: number; repositoryId: number; pullRequestNumber: number; headSha: string }>) {
   const started = Date.now();
@@ -51,6 +52,7 @@ async function processAnalysis(job: Job<{ analysisId: number; repositoryId: numb
     const workspaceMembers = await listWorkspaceMembers(repository.workspaceId);
     const recipientIds = selectOwnerRecipientIds(ownerNames, workspaceMembers, memberIds);
     const routingNote = ownerNames.length ? ` Routed owners: ${ownerNames.map(owner => `@${owner}`).join(", ")}.` : "";
+    for (const assignment of buildReviewerAssignments(ownerNames, workspaceMembers, pullRequest.id, repository.id)) await saveReviewerAssignment(assignment);
     for (const userId of recipientIds) await addNotification({ workspaceId: repository.workspaceId, userId, type: "analysis.completed", title: `PR #${pullRequest.number} analysis ${status.toLowerCase()}`, body: `${result.review.summary}${routingNote}`, relatedAnalysisId: analysis.id });
     publishEvent("analysis.completed", { analysisId: analysis.id, status, pullRequestNumber: pullRequest.number, summary: result.review.summary });
   } catch (error) {

@@ -120,9 +120,9 @@ All application code, configuration-safe integration routes, data models, UI wor
 - [x] Add AI evaluation datasets, reviewer agreement, precision, false-positive, latency, and cost metrics
 - [x] Add repository onboarding baseline scan
 - [x] Add weekly engineering health reports and audit exports
-- [ ] Add Slack/email/Teams notification adapters with configuration-safe behavior
-- [ ] Wire all second-release UI controls with success/error/loading states
-- [ ] Add tests for every second-release workflow and run production verification
+- [x] Add Slack/email/Teams notification adapters with configuration-safe behavior
+- [x] Wire all second-release UI controls with success/error/loading states
+- [x] Add tests for every second-release workflow and run production verification
 
 ## Second-release verification gaps
 
@@ -133,8 +133,8 @@ All application code, configuration-safe integration routes, data models, UI wor
 - [x] Derive dependency and architecture insights from synchronized repository files instead of hardcoded/manual inputs
 - [x] Execute onboarding scans through a worker and persist completed baseline results
 - [x] Generate audit exports for weekly reports
-- [ ] Implement safe Slack/email/Teams delivery adapters
-- [ ] Add second-release integration/end-to-end tests and rerun the production build after all fixes
+- [x] Implement safe Slack/email/Teams delivery adapters
+- [x] Add second-release integration/end-to-end tests and rerun the production build after all fixes
 
 ## Remaining second-release gaps after latest verification
 
@@ -145,9 +145,9 @@ All application code, configuration-safe integration routes, data models, UI wor
 
 ## Strict second-release completion gaps
 
-- [ ] Add persisted reviewer assignment/recommendation records derived from CODEOWNERS and a protected API/UI workflow
-- [ ] Add evaluation dataset creation, listing, selection, and labeled-sample management beyond a hardcoded dataset name
-- [ ] Add route and worker integration tests for evaluation recording/summary and owner-targeted assignment/notification behavior
+- [x] Add persisted reviewer assignment/recommendation records derived from CODEOWNERS and a protected API/UI workflow
+- [x] Add evaluation dataset creation, listing, selection, and labeled-sample management beyond a hardcoded dataset name
+- [x] Add route and worker integration tests for evaluation recording/summary and owner-targeted assignment/notification behavior
 
 ## GitHub release and startup handoff
 
@@ -162,3 +162,11 @@ All application code, configuration-safe integration routes, data models, UI wor
 - [x] Run a content-based secret scan across tracked source files and record the result
 - [x] Write the environment-key inventory and clone-to-run guide to a tracked handoff document
 - [x] Deliver the handoff document with the GitHub commit reference
+
+## Final QA corrections
+
+- [x] Add managed dataset selection and sample listing/management UI to pull-request review
+- [x] Expand reviewer assignment UI to select a real pull request and manage assignment status
+- [x] Add route-level tests for dataset CRUD, sample listing/creation, and evaluation summary
+- [x] Add worker-level tests for CODEOWNERS assignment persistence and owner-targeted notifications
+- [x] Re-run and record the production build after the latest fixes

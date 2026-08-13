@@ -94,7 +94,7 @@ After starting the server, open the dashboard and confirm that navigation reache
 
 ## Current limitations and production hardening
 
-The pushed release is feature-complete in credential-free mode, but live GitHub OAuth, GitHub webhook delivery, Redis-backed workers, and external AI behavior require the corresponding runtime values. Persisted reviewer assignment history and managed evaluation-dataset listing/creation remain explicitly tracked QA extensions in `todo.md`; the existing release includes owner-routing foundations, notification routing, evaluation recording primitives, and integration-test controls. Before production rollout, add the remaining integration/E2E coverage, configure observability, rotate secrets through the hosting platform, and validate database migrations against a staging database.
+The pushed release is feature-complete in credential-free mode, but live GitHub OAuth, GitHub webhook delivery, Redis-backed workers, and external AI behavior require the corresponding runtime values. Reviewer assignments are persisted from CODEOWNERS routing and can be managed from the control room; evaluation datasets can be created, selected, and populated with labeled samples; and Slack, email, and Teams adapters fail safely until valid HTTPS targets are configured. Before production rollout, configure observability, rotate secrets through the hosting platform, and validate database migrations against a staging database.
 
 ## Useful commands
 
