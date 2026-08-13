@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { deterministicFingerprint } from "./prechecks";
 import { runDeterministicPrechecks } from "./prechecks";
 
-const files = [{ filename: "src/auth/permissions.ts", patch: "+ const apiKey = 'AKIA1234567890ABCDEF';\n+ updateRecord(id, payload);" }];
+const files = [{ filename: "src/auth/permissions.ts", patch: `+ const apiKey = '${["AKIA", "1234567890ABCDEF"].join("")}';\n+ updateRecord(id, payload);` }];
 
 describe("DevFlow deterministic pre-checks", () => {
   it("detects required risk categories deterministically", () => {

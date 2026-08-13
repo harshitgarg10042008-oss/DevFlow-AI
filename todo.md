@@ -151,8 +151,14 @@ All application code, configuration-safe integration routes, data models, UI wor
 
 ## GitHub release and startup handoff
 
-- [ ] Verify the current project has no committed secrets or generated runtime artifacts
-- [ ] Push the current DevFlow AI source to the selected GitHub repository
-- [ ] Confirm the remote branch and commit after push
-- [ ] Prepare the exact required environment-key inventory
-- [ ] Prepare clone-to-run instructions including dependency install, migration, development, test, and production commands
+- [x] Verify the current project has no committed secrets or generated runtime artifacts
+- [x] Push the current DevFlow AI source to the selected GitHub repository
+- [x] Confirm the remote branch and commit after push
+- [x] Prepare the exact required environment-key inventory
+- [x] Prepare clone-to-run instructions including dependency install, migration, development, test, and production commands
+
+## Release handoff verification
+
+- [x] Run a content-based secret scan across tracked source files and record the result
+- [x] Write the environment-key inventory and clone-to-run guide to a tracked handoff document
+- [x] Deliver the handoff document with the GitHub commit reference

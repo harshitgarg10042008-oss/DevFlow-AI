@@ -1,32 +1,110 @@
-# DevFlow AI Setup and Architecture
+# DevFlow AI: Setup and Operations Guide
 
-DevFlow AI is a GitHub-integrated pull-request intelligence platform. The application uses the managed React, Express, tRPC, Drizzle, and Manus OAuth scaffold. GitHub access, Redis, and AI services are optional during development; the UI and deterministic review pipeline remain available with explicit empty and PARTIAL states when credentials are absent.
+DevFlow AI is an evidence-based GitHub pull-request intelligence platform. The repository contains the React dashboard, tRPC API, Drizzle schema, signed GitHub webhook ingestion, deterministic pre-checks, repository-aware review pipeline, BullMQ-compatible analysis lifecycle, review policies, finding lifecycle tracking, CODEOWNERS routing, architecture insights, CI Check Run and inline-comment adapters, health analytics, notifications, onboarding scans, audit exports, and integration-test controls.
 
-## Runtime architecture
+## Repository and release reference
 
-The browser uses React and typed tRPC procedures. Express owns the webhook endpoint, OAuth callback, server-sent event stream, storage proxy, and tRPC gateway. Drizzle persists users, workspaces, repositories, pull requests, branches, commits, webhook deliveries, analyses, findings, feedback, notifications, and audit records. BullMQ uses Redis when `REDIS_URL` is present and falls back to an inline worker in local development. The analysis worker runs deterministic pre-checks, builds bounded repository context, calls the configured LLM adapter, validates the result with Zod, persists findings, updates exact job states, and publishes notification events.
+The source is available at [harshitgarg10042008-oss/DevFlow-AI](https://github.com/harshitgarg10042008-oss/DevFlow-AI). The current pushed release is commit `35952a4` on `main`.
 
-## Local development without credentials
+> Never commit `.env` files, access tokens, private keys, database credentials, or webhook secrets. Supply runtime values through the environment of the machine or hosting platform.
 
-Run `pnpm install`, then `pnpm dev`. Manus OAuth remains the application session provider. The dashboard can render without a GitHub token, repository list queries return an empty state, the queue can run inline, and the AI adapter returns a validated PARTIAL review when no LLM credential is available. Webhook and GitHub OAuth routes return explicit configuration responses instead of failing silently.
+## Prerequisites
 
-## Final production secrets
+Use Node.js 22 or a compatible current LTS release, pnpm 10, a MySQL-compatible database, and Redis when running the distributed BullMQ worker mode. GitHub OAuth and webhooks are optional during initial development because the application deliberately falls back to safe configuration-aware adapters when external credentials are absent.
 
-| Variable | Purpose |
+## Environment-key inventory
+
+The following variables are read by the application. Values marked **required for the selected mode** must be supplied for that mode; optional integrations can remain empty while developing the dashboard and deterministic review flows.
+
+| Variable | Required for | Purpose | Example shape |
+|---|---|---|---|
+| `DATABASE_URL` | All persistent runs | MySQL/TiDB connection string used by Drizzle ORM | `mysql://user:password@host:3306/devflow` |
+| `JWT_SECRET` | All authenticated runs | Signs application sessions and GitHub OAuth state | Long random secret, 32+ bytes |
+| `VITE_APP_ID` | Manus-authenticated deployment | Manus OAuth application identifier | Platform-provided value |
+| `OAUTH_SERVER_URL` | Manus-authenticated deployment | Manus OAuth backend base URL | `https://api.manus.im` |
+| `VITE_OAUTH_PORTAL_URL` | Browser login | Frontend Manus login portal URL | Platform-provided value |
+| `OWNER_OPEN_ID` | Owner-scoped platform features | Owner identity used by the template | Platform-provided value |
+| `OWNER_NAME` | Owner-scoped platform features | Display name for the project owner | Platform-provided value |
+| `BUILT_IN_FORGE_API_URL` | Built-in AI/notification adapters | Manus built-in API endpoint | Platform-provided value |
+| `BUILT_IN_FORGE_API_KEY` | Built-in AI/notification adapters | Server-side bearer credential for built-in APIs | Platform-provided value |
+| `VITE_FRONTEND_FORGE_API_URL` | Frontend built-in integrations | Browser-safe built-in API endpoint | Platform-provided value |
+| `VITE_FRONTEND_FORGE_API_KEY` | Frontend built-in integrations | Browser-safe built-in API credential | Platform-provided value |
+| `GITHUB_CLIENT_ID` | GitHub OAuth connect flow | GitHub OAuth App client ID | GitHub OAuth App value |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth callback | GitHub OAuth App client secret | GitHub OAuth App secret |
+| `GITHUB_OAUTH_REDIRECT_URI` | GitHub OAuth connect flow | Exact callback URL registered in GitHub | `http://localhost:3000/api/github/oauth/callback` |
+| `GITHUB_WEBHOOK_SECRET` | Signed GitHub webhook verification | HMAC SHA-256 webhook signing secret | Random secret shared with GitHub |
+| `REDIS_URL` | Distributed background workers | Redis connection used by BullMQ | `redis://localhost:6379` or TLS URL |
+| `DEVFLOW_AI_MODEL` | Optional AI model selection | Overrides the built-in model selection label | `built-in-default` |
+
+The platform-provided Manus variables are automatically injected in the managed WebDev environment. For a standalone clone, configure the platform auth variables only if you intend to use Manus OAuth; otherwise use the application’s credential-free development mode and provide the database plus `JWT_SECRET` first. GitHub and Redis are not needed to inspect the dashboard or run deterministic tests, but they are needed for live repository connection, webhook processing, and distributed analysis.
+
+## GitHub OAuth and webhook configuration
+
+Create a GitHub OAuth App and set its authorization callback to the value of `GITHUB_OAUTH_REDIRECT_URI`. For local development, use `http://localhost:3000/api/github/oauth/callback`; for a deployed site, use the deployed HTTPS origin followed by `/api/github/oauth/callback`. The application starts OAuth at `/api/github/oauth/start` and completes it at `/api/github/oauth/callback`.
+
+For repository webhooks, create a webhook whose payload URL is `https://YOUR_HOST/api/webhooks/github`, choose the JSON content type, and set the same random value in GitHub’s secret field and `GITHUB_WEBHOOK_SECRET`. The server verifies the `X-Hub-Signature-256` HMAC header and uses delivery IDs for idempotency. Do not expose the webhook secret to the browser.
+
+## Clone and install
+
+```bash
+git clone https://github.com/harshitgarg10042008-oss/DevFlow-AI.git
+cd DevFlow-AI
+pnpm install
+```
+
+The repository intentionally does not contain real credentials. Create a local `.env` file from the inventory above and keep it untracked. If an `.env.example` file is not present in the checkout, create `.env` directly; the server reads the variables from the process environment supplied by the runtime.
+
+## Database and local services
+
+Start MySQL and Redis using your preferred local tools, then set `DATABASE_URL`, `JWT_SECRET`, and `REDIS_URL`. Apply the current Drizzle schema with:
+
+```bash
+pnpm db:push
+```
+
+`db:push` generates any pending Drizzle migration and applies migrations to the configured database. Use a disposable development database when experimenting with schema changes. Do not run destructive SQL against a production database without a backup and review.
+
+## Run, test, and build
+
+Start the development server with hot reload:
+
+```bash
+pnpm dev
+```
+
+The application serves the dashboard at `http://localhost:3000`. Validate types and run the test suite with:
+
+```bash
+pnpm check
+pnpm test
+```
+
+Create the production bundle and start it with:
+
+```bash
+pnpm build
+pnpm start
+```
+
+The server obtains its port from the hosting environment; do not hardcode a production port. In distributed mode, run the web process and the analysis worker according to the deployment platform’s process model. The queue implementation uses inline-safe behavior when Redis is unavailable, so a credential-free local run remains usable for deterministic and configuration-safe workflows.
+
+## First-run validation
+
+After starting the server, open the dashboard and confirm that navigation reaches the repository, pull-request, health, notifications, and advanced-control sections. Without GitHub credentials, confirm that the UI presents a clear configuration state rather than a broken interaction. With GitHub credentials configured, connect a repository, run synchronization, open a pull request, trigger analysis, review findings, submit finding feedback, and verify that notification actions mark items read. For webhook validation, send a signed test delivery from GitHub and confirm that duplicate delivery IDs do not create duplicate analysis jobs.
+
+## Current limitations and production hardening
+
+The pushed release is feature-complete in credential-free mode, but live GitHub OAuth, GitHub webhook delivery, Redis-backed workers, and external AI behavior require the corresponding runtime values. Persisted reviewer assignment history and managed evaluation-dataset listing/creation remain explicitly tracked QA extensions in `todo.md`; the existing release includes owner-routing foundations, notification routing, evaluation recording primitives, and integration-test controls. Before production rollout, add the remaining integration/E2E coverage, configure observability, rotate secrets through the hosting platform, and validate database migrations against a staging database.
+
+## Useful commands
+
+| Goal | Command |
 |---|---|
-| `GITHUB_CLIENT_ID` | GitHub OAuth application client ID. |
-| `GITHUB_CLIENT_SECRET` | GitHub OAuth application client secret. |
-| `GITHUB_OAUTH_REDIRECT_URI` | Public callback URL ending in `/api/github/oauth/callback`. |
-| `GITHUB_WEBHOOK_SECRET` | Shared GitHub webhook secret for HMAC SHA-256 verification. |
-| `REDIS_URL` | Redis connection URL for durable BullMQ workers. |
-| `BUILT_IN_FORGE_API_URL` and `BUILT_IN_FORGE_API_KEY` | Managed AI gateway configuration already supplied by the project environment. |
-
-Never commit `.env` files or access tokens. Configure the same variables in both development and production secret managers. After adding them, connect GitHub through `/api/github/oauth/start`, configure the repository webhook at `/api/webhooks/github`, and verify an opened or synchronized pull request produces one persisted delivery and one deterministic analysis job.
-
-## Verification commands
-
-Use `pnpm check` for TypeScript, `pnpm test` for unit and integration regression tests, and `pnpm build` for the production bundle. The critical security assertions are HMAC SHA-256 verification, delivery-ID idempotency, exact status transitions, deterministic job IDs, Zod validation, workspace access checks, and redacted request logging.
-
-## Known final handoff step
-
-The code is intentionally configuration-safe before credentials are entered. The last step is to add the real GitHub OAuth values, webhook secret, Redis URL, and any external AI credentials, then execute one live repository synchronization and one test pull request through the complete webhook-to-review workflow.
+| Install locked dependencies | `pnpm install` |
+| Apply schema migrations | `pnpm db:push` |
+| Start development server | `pnpm dev` |
+| Type-check | `pnpm check` |
+| Run tests | `pnpm test` |
+| Build production assets | `pnpm build` |
+| Start production server | `pnpm start` |
+| Format source | `pnpm format` |
