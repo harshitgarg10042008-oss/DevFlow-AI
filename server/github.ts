@@ -47,3 +47,6 @@ export async function getFileContent(accessToken: string, owner: string, repo: s
 }
 
 export function githubConfigured() { return Boolean(ENV.githubClientId && ENV.githubClientSecret); }
+
+export async function createPullRequestReviewComment(accessToken: string, owner: string, repo: string, number: number, body: string, commitId: string, path: string, line?: number) { const client = createGithubClient(accessToken); const response = await client.rest.pulls.createReviewComment({ owner, repo, pull_number: number, body, commit_id: commitId, path, line: line || undefined, side: "RIGHT" }); return { id: String(response.data.id), htmlUrl: response.data.html_url }; }
+export async function createGithubCheckRun(accessToken: string, owner: string, repo: string, name: string, headSha: string, conclusion: "success" | "failure" | "neutral", summary: string) { const client = createGithubClient(accessToken); const response = await client.rest.checks.create({ owner, repo, name, head_sha: headSha, status: "completed", conclusion, output: { title: "DevFlow AI review", summary } }); return { id: String(response.data.id), url: response.data.html_url || null }; }

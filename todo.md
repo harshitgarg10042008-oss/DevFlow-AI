@@ -63,8 +63,8 @@
 - [x] Compute and display accepted-vs-dismissed feedback rate percentages
 - [x] Implement recurring-risk fingerprint aggregation and trend display
 - [x] Fetch nearby tests and manifest files in the worker context builder
-- [x] Add integration tests for webhook idempotency, queue transitions, and the review workflow
-- [x] Complete GitHub OAuth credentials and callback configuration
+- [x] Add integration tests for webhook idempotency/queue transitions and the review workflow
+- [ ] Complete GitHub OAuth credentials and callback configuration
 - [x] Complete branch and commit metadata synchronization
 - [x] Complete security hardening, structured logging, and production readiness
 
@@ -90,8 +90,69 @@
 - [x] Add security headers, request limits, redacted structured logs, and error-safe external API handling
 - [x] Add production setup documentation with final credential checklist
 - [x] Run complete typecheck, test suite, production build, and preview verification
-- [x] Save final complete-application checkpoint only after all implementation items are done
+- [ ] Save final complete-application checkpoint only after all implementation items are done
 
 ## Completion note
 
 All application code, configuration-safe integration routes, data models, UI workflows, tests, build verification, and production setup documentation are implemented. Real GitHub OAuth credentials, webhook secret, Redis URL, and any external AI credentials are intentionally deferred to the final user-side configuration and live verification step.
+
+## Interaction audit and repair
+
+- [x] Audit every visible dashboard navigation item and make it navigate to a real route or remove it
+- [x] Make GitHub OAuth, token connect, repository connect, disconnect, and metadata sync controls show working success and error states
+- [x] Make all pull-request actions work, including View on GitHub and Re-run analysis
+- [x] Make all feedback controls persist and visibly confirm Accept, Dismiss, and Inaccurate
+- [x] Make notification items and read states interactive
+- [x] Remove or wire every placeholder button and prevent dead-end navigation
+- [x] Add browser-verifiable interaction coverage for the repaired flows
+
+## DevFlow AI second-release feature expansion
+
+- [x] Add repository review policy settings and versioned policy snapshots
+- [x] Implement approved inline GitHub review comment publishing with duplicate prevention and audit records
+- [x] Add finding fingerprints and lifecycle states: NEW, RECURRING, FIXED, REOPENED, ACCEPTED, DISMISSED, INACCURATE
+- [x] Add CI Check Run/status integration with policy-based pass/fail behavior
+- [x] Add CODEOWNERS parsing and ownership-aware reviewer routing
+- [x] Add test impact analysis and relevant-coverage warnings
+- [x] Add security-tool adapter contracts for Semgrep, Gitleaks, Trivy, and dependency findings
+- [x] Add dependency and change-risk analysis
+- [x] Add repository architecture/module/dependency insights
+- [x] Add AI evaluation datasets, reviewer agreement, precision, false-positive, latency, and cost metrics
+- [x] Add repository onboarding baseline scan
+- [x] Add weekly engineering health reports and audit exports
+- [ ] Add Slack/email/Teams notification adapters with configuration-safe behavior
+- [ ] Wire all second-release UI controls with success/error/loading states
+- [ ] Add tests for every second-release workflow and run production verification
+
+## Second-release verification gaps
+
+- [x] Implement real GitHub review-comment publishing with duplicate detection and audit-log records
+- [x] Track lifecycle states across analyses and feedback transitions, including RECURRING, FIXED, and REOPENED
+- [x] Integrate GitHub Check Runs/status publication
+- [x] Route owners into reviewer notifications and ownership workflows
+- [x] Derive dependency and architecture insights from synchronized repository files instead of hardcoded/manual inputs
+- [x] Execute onboarding scans through a worker and persist completed baseline results
+- [x] Generate audit exports for weekly reports
+- [ ] Implement safe Slack/email/Teams delivery adapters
+- [ ] Add second-release integration/end-to-end tests and rerun the production build after all fixes
+
+## Remaining second-release gaps after latest verification
+
+- [x] Add evaluation dataset management with labeled samples and precision calculation
+- [x] Surface evaluation cost and precision metrics in the review-quality UI
+- [x] Add owner-targeted reviewer assignment and owner-specific notification delivery
+- [x] Add tests for evaluation datasets and ownership routing
+
+## Strict second-release completion gaps
+
+- [ ] Add persisted reviewer assignment/recommendation records derived from CODEOWNERS and a protected API/UI workflow
+- [ ] Add evaluation dataset creation, listing, selection, and labeled-sample management beyond a hardcoded dataset name
+- [ ] Add route and worker integration tests for evaluation recording/summary and owner-targeted assignment/notification behavior
+
+## GitHub release and startup handoff
+
+- [ ] Verify the current project has no committed secrets or generated runtime artifacts
+- [ ] Push the current DevFlow AI source to the selected GitHub repository
+- [ ] Confirm the remote branch and commit after push
+- [ ] Prepare the exact required environment-key inventory
+- [ ] Prepare clone-to-run instructions including dependency install, migration, development, test, and production commands

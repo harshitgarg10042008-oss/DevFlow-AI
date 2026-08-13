@@ -22,6 +22,27 @@
       "when": 1786640762208,
       "tag": "0002_curvy_mercury",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1786642123787,
+      "tag": "0003_fancy_the_phantom",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1786643466107,
+      "tag": "0004_brown_juggernaut",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1786644288193,
+      "tag": "0005_aberrant_plazm",
+      "breakpoints": true
     }
   ]
 }

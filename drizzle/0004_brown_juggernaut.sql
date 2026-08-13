@@ -1,0 +1,1 @@
+ALTER TABLE `analysisEvaluations` ADD `datasetName` varchar(120) DEFAULT 'production' NOT NULL;

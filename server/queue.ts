@@ -1,9 +1,11 @@
 import { Queue, Worker, type Job } from "bullmq";
 import { ENV } from "./_core/env";
-import { addNotification, createAnalysis, getAnalysis, getPullRequest, getRepository, listWorkspaceMemberIds, saveFindings, updateAnalysis } from "./db";
+import { addNotification, createAnalysis, getAnalysis, getPullRequest, getRepository, listWorkspaceMemberIds, listWorkspaceMembers, saveFindings, updateAnalysis } from "./db";
 import { getFileContent, getPullRequestDiff, getPullRequestFiles } from "./github";
 import { normalizeReviewFindings, runAIReview } from "./ai-reviewer";
 import { publishEvent } from "./events";
+import { architectureModules, deriveFindingLifecycle, findingFingerprint, impactedTests, normalizePolicy, ownerMatches, policyBlocksFindings, selectOwnerRecipientIds } from "./second-release";
+import { latestLifecycleForFingerprint, latestReviewPolicy, listCodeOwners, listLatestLifecycleForRepository, saveArchitectureModules, saveCiCheck, saveDependencyRisk, saveFindingLifecycle } from "./second-release-db";
 
 export const analysisQueueName = "devflow-analysis";
 const connection = ENV.redisUrl ? { url: ENV.redisUrl, maxRetriesPerRequest: null } : null;
@@ -27,11 +29,29 @@ async function processAnalysis(job: Job<{ analysisId: number; repositoryId: numb
     const nearbyTests: Record<string, string> = {}; const manifests: Record<string, string> = {};
     if (token) { const candidates = new Set<string>(); for (const file of files) { if (/(^|[./_-])(test|spec)([./_-]|$)|__tests__/i.test(file.filename)) candidates.add(file.filename); else { const match = file.filename.match(/^(.*)\.(tsx?|jsx?|py|go|java)$/); if (match) { const base = match[1]; const ext = file.filename.slice(base.length); candidates.add(`${base}.test${ext}`); candidates.add(`${base}.spec${ext}`); candidates.add(`${base.replace(/\/[^/]+$/, "")}/__tests__/${base.split("/").pop()}.test${ext}`); } } } for (const candidate of Array.from(candidates).slice(0, 12)) { const content = await getFileContent(token, repository.owner, repository.name, candidate, pullRequest.headSha); if (content) nearbyTests[candidate] = content; } for (const file of ["package.json", "pnpm-lock.yaml", "package-lock.json", "tsconfig.json"]) { const content = await getFileContent(token, repository.owner, repository.name, file, pullRequest.headSha); if (content) manifests[file] = content; } }
     const result = await runAIReview({ diff, files: changedFiles, nearbyTests, manifests, additions: pullRequest.additions, deletions: pullRequest.deletions });
-    await saveFindings(analysis.id, normalizeReviewFindings(analysis.id, result.review.findings));
+    await saveArchitectureModules(repository.id, architectureModules(files.map(file => file.filename)));
+    const tests = Object.keys(nearbyTests);
+    for (const impact of impactedTests(files.map(file => file.filename), tests)) await import("./second-release-db").then(({ saveTestImpact }) => saveTestImpact({ analysisId: analysis.id, changedFile: impact.changedFile, impactedTest: impact.impactedTest, coverageAvailable: impact.coverageAvailable ? 1 : 0, confidence: impact.confidence }));
+    if (manifests["package.json"]) { try { const packageJson = JSON.parse(manifests["package.json"]); for (const packageName of Object.keys({ ...(packageJson.dependencies || {}), ...(packageJson.devDependencies || {}) }).slice(0, 100)) await saveDependencyRisk({ repositoryId: repository.id, packageName, currentVersion: String((packageJson.dependencies || {})[packageName] || (packageJson.devDependencies || {})[packageName]), severity: "info", source: "manifest", details: "Dependency observed during repository-aware review." }); } catch { /* malformed manifests remain non-blocking */ } }
+    const normalizedFindings = normalizeReviewFindings(analysis.id, result.review.findings);
+    const persistedFindings = await saveFindings(analysis.id, normalizedFindings);
+    const currentFingerprints = new Set<string>();
+    for (const finding of persistedFindings) { const fingerprint = findingFingerprint(finding); currentFingerprints.add(fingerprint); const previous = await latestLifecycleForFingerprint(repository.id, fingerprint); const lifecycle = previous?.lifecycle === "FIXED" ? "REOPENED" : deriveFindingLifecycle(previous ? { fingerprint: previous.fingerprint, status: previous.lifecycle } : undefined, fingerprint); await saveFindingLifecycle({ findingId: finding.id, repositoryId: repository.id, fingerprint, lifecycle, previousFindingId: previous?.findingId }); }
+    for (const previous of await listLatestLifecycleForRepository(repository.id)) if (!currentFingerprints.has(previous.fingerprint) && ["NEW", "RECURRING", "REOPENED"].includes(previous.lifecycle)) await saveFindingLifecycle({ findingId: previous.findingId, repositoryId: repository.id, fingerprint: previous.fingerprint, lifecycle: "FIXED", previousFindingId: previous.findingId });
+    const policyRow = await latestReviewPolicy(repository.id);
+    const policy = normalizePolicy(policyRow ? { minimumBlockingSeverity: policyRow.minimumBlockingSeverity as "critical" | "high" | "medium" | "low" | "info", requireTestsFor: (policyRow.requireTestsFor as string[]) || undefined, ignoredPaths: (policyRow.ignoredPaths as string[]) || undefined, enabledPrechecks: (policyRow.enabledPrechecks as string[]) || undefined, maximumPrSize: policyRow.maximumPrSize, blockOnSecrets: Boolean(policyRow.blockOnSecrets), postInlineComments: Boolean(policyRow.postInlineComments) } : {});
+    const blocking = policyBlocksFindings(policy, persistedFindings);
+    await saveCiCheck({ analysisId: analysis.id, repositoryId: repository.id, conclusion: blocking.length ? "failure" : "success", blockingFindings: blocking.length, detailsUrl: `/pull-requests/${pullRequest.id}` });
     const status = result.review.modelMetadata.model === "unavailable" ? "PARTIAL" : "COMPLETED";
     await updateAnalysis(analysis.id, { status, summary: result.review.summary, overallRisk: result.review.overallRisk, promptVersion: result.review.modelMetadata.promptVersion, modelName: result.review.modelMetadata.model, completedAt: new Date(), latencyMs: Date.now() - started, precheckResults: result.prechecks, contextSources: result.review.contextSources });
     const memberIds = await listWorkspaceMemberIds(repository.workspaceId);
-    for (const userId of memberIds) await addNotification({ workspaceId: repository.workspaceId, userId, type: "analysis.completed", title: `PR #${pullRequest.number} analysis ${status.toLowerCase()}`, body: result.review.summary, relatedAnalysisId: analysis.id });
+    const owners = await listCodeOwners(repository.id);
+    const ownerMatchesForFiles = persistedFindings.map(finding => ({ filePath: finding.filePath, owners: owners.filter(rule => finding.filePath && ownerMatches(rule.pattern, finding.filePath)).map(rule => rule.owner) })).filter(item => item.owners.length > 0);
+    const ownerNames = Array.from(new Set(ownerMatchesForFiles.flatMap(item => item.owners).map(owner => owner.replace(/^@/, "").toLowerCase())));
+    const workspaceMembers = await listWorkspaceMembers(repository.workspaceId);
+    const recipientIds = selectOwnerRecipientIds(ownerNames, workspaceMembers, memberIds);
+    const routingNote = ownerNames.length ? ` Routed owners: ${ownerNames.map(owner => `@${owner}`).join(", ")}.` : "";
+    for (const userId of recipientIds) await addNotification({ workspaceId: repository.workspaceId, userId, type: "analysis.completed", title: `PR #${pullRequest.number} analysis ${status.toLowerCase()}`, body: `${result.review.summary}${routingNote}`, relatedAnalysisId: analysis.id });
     publishEvent("analysis.completed", { analysisId: analysis.id, status, pullRequestNumber: pullRequest.number, summary: result.review.summary });
   } catch (error) {
     await updateAnalysis(analysis.id, { status: "FAILED", errorCode: "ANALYSIS_FAILED", errorMessage: error instanceof Error ? error.message : "Unknown analysis error", completedAt: new Date(), latencyMs: Date.now() - started });
