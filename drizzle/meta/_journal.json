@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1786638794080,
+      "tag": "0000_funny_master_chief",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1786639082027,
+      "tag": "0001_modern_nightcrawler",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1786640762208,
+      "tag": "0002_curvy_mercury",
+      "breakpoints": true
+    }
+  ]
+}
