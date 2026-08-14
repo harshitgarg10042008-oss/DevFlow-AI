@@ -43,6 +43,13 @@
       "when": 1786644288193,
       "tag": "0005_aberrant_plazm",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1786690282718,
+      "tag": "0006_curious_mole_man",
+      "breakpoints": true
     }
   ]
 }
