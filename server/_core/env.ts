@@ -14,4 +14,5 @@ export const ENV = {
   githubOAuthRedirectUri: process.env.GITHUB_OAUTH_REDIRECT_URI ?? "",
   redisUrl: process.env.REDIS_URL ?? "",
   aiModel: process.env.DEVFLOW_AI_MODEL ?? "built-in-default",
+  aiDailyTokenCap: Number(process.env.DEVFLOW_AI_DAILY_TOKEN_CAP ?? 200000),
 };

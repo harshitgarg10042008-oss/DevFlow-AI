@@ -175,3 +175,24 @@ All application code, configuration-safe integration routes, data models, UI wor
 
 - [x] Replace Unix-only NODE_ENV assignment in the development script with a cross-platform startup command
 - [x] Verify the Windows-compatible script and push the fix to GitHub
+
+## Attached quality and reliability recommendations
+
+- [x] Define managed benchmark datasets with clean and injected-issue cases, target metrics, precision, recall, false-positive rate, and human-agreement distinctions
+- [x] Document and enforce the deterministic-check versus AI-reasoning boundary
+- [x] Document and enforce bounded context-builder scope and retrieval policy
+- [x] Specify and test stable finding fingerprint normalization independent of line numbers
+- [x] Harden webhook idempotency with deterministic job dedupe and crash-safe enqueue semantics
+- [x] Add a workspace analysis budget guard with configurable daily limits
+- [x] Add pluggable language-specific deterministic-check interfaces with a TypeScript plugin
+- [x] Document GitHub rate-limit backoff and queue retry strategy
+- [x] Add tests and update setup/architecture documentation for the attached recommendations
+- [x] Verify, commit, and push the recommendation implementation to GitHub
+
+## Recommendation follow-up corrections
+
+- [x] Persist benchmark-case metadata for clean/injected issue type and target quality thresholds in managed evaluation datasets
+- [x] Replace the process-local AI budget map with shared Redis-backed daily accounting and a safe fallback
+- [x] Add regression coverage for webhook retry-after-crash/idempotency behavior
+- [x] Add regression coverage for GitHub rate-limit and Retry-After backoff behavior
+- [x] Commit and push the recommendation follow-up corrections and record the new release commit

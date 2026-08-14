@@ -7,7 +7,7 @@ const files = [{ filename: "src/auth/permissions.ts", patch: `+ const apiKey = '
 describe("DevFlow deterministic pre-checks", () => {
   it("detects required risk categories deterministically", () => {
     const results = runDeterministicPrechecks(files, 900, 120);
-    expect(results.map(result => result.key)).toEqual(["missing_tests", "large_pr", "secret_pattern", "migration_schema", "authorization_sensitive"]);
+    expect(results.map(result => result.key)).toEqual(["missing_tests", "large_pr", "secret_pattern", "migration_schema", "authorization_sensitive", "console_log"]);
     expect(results.find(result => result.key === "secret_pattern")?.passed).toBe(false);
     expect(results.find(result => result.key === "authorization_sensitive")?.passed).toBe(false);
     expect(results.find(result => result.key === "large_pr")?.passed).toBe(false);

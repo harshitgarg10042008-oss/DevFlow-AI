@@ -4,36 +4,37 @@ import { ENV } from "./_core/env";
 export function createGithubClient(accessToken?: string) {
   return new Octokit({ auth: accessToken || undefined, userAgent: "DevFlow-AI/1.0" });
 }
+export async function withGithubBackoff<T>(operation: () => Promise<T>, attempts = 4, sleep: (ms: number) => Promise<void> = (ms) => new Promise(resolve => setTimeout(resolve, ms))): Promise<T> { let lastError: unknown; for (let attempt = 0; attempt < attempts; attempt++) { try { return await operation(); } catch (error) { lastError = error; const status = typeof error === "object" && error !== null && "status" in error ? Number((error as { status?: number }).status) : 0; if (![403, 429, 500, 502, 503, 504].includes(status) || attempt === attempts - 1) throw error; const headers = typeof error === "object" && error !== null && "response" in error ? ((error as { response?: { headers?: Record<string, string> } }).response?.headers || {}) : {}; const retryAfter = Number(headers["retry-after"] || 0); const resetAt = Number(headers["x-ratelimit-reset"] || 0); const delay = retryAfter > 0 ? retryAfter * 1000 : resetAt > 0 ? Math.max(250, resetAt * 1000 - Date.now()) : Math.min(8000, 500 * 2 ** attempt); await sleep(delay); } } throw lastError; }
 
 export async function listAccessibleRepositories(accessToken: string) {
   const client = createGithubClient(accessToken);
-  const repos = await client.paginate(client.rest.repos.listForAuthenticatedUser, { per_page: 100, sort: "updated", affiliation: "owner,collaborator,organization_member" });
+  const repos = await withGithubBackoff(() => client.paginate(client.rest.repos.listForAuthenticatedUser, { per_page: 100, sort: "updated", affiliation: "owner,collaborator,organization_member" }));
   return repos.map(repo => ({ id: repo.id, owner: repo.owner.login, name: repo.name, fullName: repo.full_name, defaultBranch: repo.default_branch || "main", isPrivate: repo.private }));
 }
 
-export async function getRepositoryBranches(accessToken: string, owner: string, repo: string) { const client = createGithubClient(accessToken); return client.paginate(client.rest.repos.listBranches, { owner, repo, per_page: 100 }).then(rows => rows.map(branch => ({ githubBranchId: branch.name, name: branch.name, protected: branch.protected, latestSha: branch.commit.sha }))); }
-export async function getRepositoryCommits(accessToken: string, owner: string, repo: string) { const client = createGithubClient(accessToken); return client.paginate(client.rest.repos.listCommits, { owner, repo, per_page: 100 }).then(rows => rows.map(commit => ({ sha: commit.sha, message: commit.commit.message, author: commit.author?.login || commit.commit.author?.name || null, committedAt: commit.commit.author?.date ? new Date(commit.commit.author.date) : null, htmlUrl: commit.html_url }))); }
+export async function getRepositoryBranches(accessToken: string, owner: string, repo: string) { const client = createGithubClient(accessToken); return withGithubBackoff(() => client.paginate(client.rest.repos.listBranches, { owner, repo, per_page: 100 })).then(rows => rows.map(branch => ({ githubBranchId: branch.name, name: branch.name, protected: branch.protected, latestSha: branch.commit.sha }))); }
+export async function getRepositoryCommits(accessToken: string, owner: string, repo: string) { const client = createGithubClient(accessToken); return withGithubBackoff(() => client.paginate(client.rest.repos.listCommits, { owner, repo, per_page: 100 })).then(rows => rows.map(commit => ({ sha: commit.sha, message: commit.commit.message, author: commit.author?.login || commit.commit.author?.name || null, committedAt: commit.commit.author?.date ? new Date(commit.commit.author.date) : null, htmlUrl: commit.html_url }))); }
 
 export async function getRepositoryPullRequests(accessToken: string, owner: string, repo: string) {
   const client = createGithubClient(accessToken);
-  const response = await client.rest.pulls.list({ owner, repo, state: "all", per_page: 50, sort: "updated", direction: "desc" });
+  const response = await withGithubBackoff(() => client.rest.pulls.list({ owner, repo, state: "all", per_page: 50, sort: "updated", direction: "desc" }));
   return response.data.map(pr => ({ githubPullRequestId: pr.id, number: pr.number, title: pr.title, body: pr.body, state: pr.state, author: pr.user?.login || "unknown", headSha: pr.head.sha, baseSha: pr.base.sha, additions: 0, deletions: 0, changedFiles: 0, htmlUrl: pr.html_url, openedAt: new Date(pr.created_at) }));
 }
 
 export async function getPullRequestDetails(accessToken: string, owner: string, repo: string, number: number) {
   const client = createGithubClient(accessToken);
-  const response = await client.rest.pulls.get({ owner, repo, pull_number: number });
+  const response = await withGithubBackoff(() => client.rest.pulls.get({ owner, repo, pull_number: number }));
   return response.data;
 }
 
 export async function getPullRequestFiles(accessToken: string, owner: string, repo: string, number: number) {
   const client = createGithubClient(accessToken);
-  return client.paginate(client.rest.pulls.listFiles, { owner, repo, pull_number: number, per_page: 100 });
+  return withGithubBackoff(() => client.paginate(client.rest.pulls.listFiles, { owner, repo, pull_number: number, per_page: 100 }));
 }
 
 export async function getPullRequestDiff(accessToken: string, owner: string, repo: string, number: number) {
   const client = createGithubClient(accessToken);
-  const response = await client.rest.pulls.get({ owner, repo, pull_number: number, mediaType: { format: "diff" } });
+  const response = await withGithubBackoff(() => client.rest.pulls.get({ owner, repo, pull_number: number, mediaType: { format: "diff" } }));
   return typeof response.data === "string" ? response.data : String(response.data);
 }
 

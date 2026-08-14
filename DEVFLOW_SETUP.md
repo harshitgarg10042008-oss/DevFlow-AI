@@ -108,3 +108,19 @@ The pushed release is feature-complete in credential-free mode, but live GitHub 
 | Build production assets | `pnpm build` |
 | Start production server | `pnpm start` |
 | Format source | `pnpm format` |
+
+## Review quality and reliability contract
+
+DevFlow AI now separates deterministic checks from AI reasoning. Deterministic checks cover test-change presence, pull-request size, secret patterns, migration/schema paths, authorization-sensitive paths, and simple TypeScript hygiene such as `console.log`. The model is reserved for logic defects, security edge cases, missing edge cases, API-contract reasoning, and performance trade-offs. Every precheck is tagged as deterministic in the persisted analysis metadata.
+
+The v1 context builder is explicitly bounded: at most 60,000 diff characters, 30 changed files, 8,000 patch characters per file, eight nearby tests at 5,000 characters each, and eight manifests at 4,000 characters each. This keeps model cost predictable while retaining the diff, changed-file patches, nearby tests, and dependency manifests as the primary evidence sources.
+
+Finding fingerprints are SHA-256 hashes of normalized category, normalized file path, title, and whitespace/comment-normalized evidence. Line numbers are intentionally excluded, so a finding can remain recognizable when a later commit shifts line positions. The workspace AI budget guard defaults to 200,000 estimated input tokens per UTC day and can be changed with `DEVFLOW_AI_DAILY_TOKEN_CAP`; once exhausted, deterministic findings remain available and the model call is skipped safely.
+
+Evaluation is managed through named datasets. Benchmark cases distinguish clean pull requests from injected-issue pull requests and report precision, recall, false-positive rate, and human agreement separately. Dismissed findings remain a feedback signal, not a substitute for a labeled benchmark. The project includes unit coverage for these metric definitions and the control-room/review UI supports dataset selection, sample labeling, and sample listing.
+
+Webhook deliveries are persisted by GitHub delivery ID. Processed deliveries return a duplicate response; an unprocessed delivery is retried after a crash. Analysis jobs also use deterministic repository/pull-request/revision job IDs, so the database uniqueness constraint and BullMQ job ID prevent duplicate enqueueing during retries. Outbound GitHub requests use bounded exponential backoff and honor `Retry-After` and rate-limit reset headers. TypeScript deterministic checks are exposed through a plugin interface so Python or other language plugins can be added without rewriting the worker.
+
+Benchmark datasets persist their `BENCHMARK` type and target precision, recall, and false-positive thresholds. Samples persist whether they are `CLEAN` or `INJECTED_ISSUE` and may store expected finding categories, allowing benchmark definitions to survive worker restarts and be managed through the protected evaluation procedures.
+
+When `REDIS_URL` is configured, daily AI token accounting is shared across worker processes using Redis keys scoped by workspace and UTC day. If Redis is unavailable, credential-free development falls back to a process-local guard and continues returning deterministic findings rather than failing the review. For production, configure Redis so the cap is shared across instances.

@@ -244,6 +244,10 @@ export const evaluationDatasets = mysqlTable("evaluationDatasets", {
   workspaceId: int("workspaceId").notNull(),
   name: varchar("name", { length: 120 }).notNull(),
   description: text("description"),
+  benchmarkType: mysqlEnum("benchmarkType", ["PRODUCTION", "BENCHMARK"]).default("PRODUCTION").notNull(),
+  targetPrecision: varchar("targetPrecision", { length: 20 }),
+  targetRecall: varchar("targetRecall", { length: 20 }),
+  targetFalsePositiveRate: varchar("targetFalsePositiveRate", { length: 20 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -253,6 +257,8 @@ export const evaluationSamples = mysqlTable("evaluationSamples", {
   analysisId: int("analysisId").notNull(),
   findingId: int("findingId"),
   reviewerLabel: varchar("reviewerLabel", { length: 80 }).notNull(),
+  caseType: mysqlEnum("caseType", ["CLEAN", "INJECTED_ISSUE"]).default("INJECTED_ISSUE").notNull(),
+  expectedCategories: json("expectedCategories"),
   modelLabel: varchar("modelLabel", { length: 80 }),
   falsePositive: int("falsePositive"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

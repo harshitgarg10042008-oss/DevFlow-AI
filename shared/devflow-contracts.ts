@@ -37,7 +37,8 @@ export const aiReviewSchema = z.object({
 export type AIReview = z.infer<typeof aiReviewSchema>;
 
 export const precheckResultSchema = z.object({
-  key: z.enum(["missing_tests", "large_pr", "secret_pattern", "migration_schema", "authorization_sensitive"]),
+  key: z.enum(["missing_tests", "large_pr", "secret_pattern", "migration_schema", "authorization_sensitive", "console_log"]),
+  kind: z.literal("deterministic"),
   passed: z.boolean(),
   severity: severitySchema,
   message: z.string(),

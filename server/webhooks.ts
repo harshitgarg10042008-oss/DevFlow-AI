@@ -5,6 +5,8 @@ import { ENV } from "./_core/env";
 import { findWebhookDelivery, getRepositoryByGithubId, markWebhookProcessed, saveWebhookDelivery, upsertPullRequest } from "./db";
 import { enqueueAnalysis } from "./queue";
 
+export function shouldRetryWebhookDelivery(delivery: { id?: number; processedAt?: Date | null } | undefined) { return Boolean(delivery && delivery.id && !delivery.processedAt); }
+
 export function verifySignature(rawBody: Buffer, signature: string | undefined, secret = ENV.githubWebhookSecret) {
   if (!secret || !signature) return false;
   const expected = `sha256=${crypto.createHmac("sha256", secret).update(rawBody).digest("hex")}`;
@@ -19,13 +21,16 @@ export function registerGithubWebhook(app: Express) {
     const deliveryId = req.header("x-github-delivery");
     const eventName = req.header("x-github-event") || "unknown";
     if (!deliveryId) return res.status(400).json({ error: "Missing GitHub delivery ID" });
-    if (await findWebhookDelivery(deliveryId)) return res.status(202).json({ accepted: true, duplicate: true });
+    const existingDelivery = await findWebhookDelivery(deliveryId);
+    if (existingDelivery?.processedAt) return res.status(202).json({ accepted: true, duplicate: true });
+    if (existingDelivery && !shouldRetryWebhookDelivery(existingDelivery)) return res.status(202).json({ accepted: true, duplicate: true });
     const payloadHash = crypto.createHash("sha256").update(rawBody).digest("hex");
     let payload: unknown;
     try { payload = Buffer.isBuffer(req.body) ? JSON.parse(req.body.toString("utf8")) : req.body; } catch { return res.status(400).json({ error: "Invalid JSON payload" }); }
     const parsed = webhookEventSchema.safeParse(payload);
     const event = parsed.success ? parsed.data : undefined;
-    const deliveryDbId = await saveWebhookDelivery({ githubDeliveryId: deliveryId, eventName, action: event?.action, payloadHash, payload });
+    let deliveryDbId = existingDelivery?.id;
+    if (!deliveryDbId) { try { deliveryDbId = await saveWebhookDelivery({ githubDeliveryId: deliveryId, eventName, action: event?.action, payloadHash, payload }); } catch { const racedDelivery = await findWebhookDelivery(deliveryId); deliveryDbId = racedDelivery?.id; if (racedDelivery?.processedAt) return res.status(202).json({ accepted: true, duplicate: true }); } }
     if (!event?.repository || !event.pull_request || !["opened", "reopened", "synchronize"].includes(event.action || "")) { if (deliveryDbId) await markWebhookProcessed(deliveryDbId); return res.status(202).json({ accepted: true, queued: false }); }
     const repository = await getRepositoryByGithubId(event.repository.id);
     if (!repository) { if (deliveryDbId) await markWebhookProcessed(deliveryDbId); return res.status(202).json({ accepted: true, queued: false, reason: "repository_not_connected" }); }
