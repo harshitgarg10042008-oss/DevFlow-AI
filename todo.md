@@ -211,3 +211,10 @@ All application code, configuration-safe integration routes, data models, UI wor
 - [x] Make Redis-unavailable diagnostics clear and rate-limited
 - [x] Verify the complete test suite and production build after runtime corrections
 - [ ] Rotate all credentials exposed in the local incident before live verification
+
+## GitHub OAuth user creation incident
+
+- [x] Diagnose the `user_creation_failed` callback using the user upsert query, schema, and database connection logs
+- [x] Add database-specific OAuth error classification and regression coverage
+- [x] Run the full 68-test suite, typecheck, and production build
+- [ ] Rotate the credentials exposed in the local incident before live verification

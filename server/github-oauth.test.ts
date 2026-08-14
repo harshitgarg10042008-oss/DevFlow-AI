@@ -142,3 +142,16 @@ describe("GitHub OAuth State Validation", () => {
     });
   });
 });
+
+
+describe("OAuth callback error classification", () => {
+  it("classifies database timeouts as database_unavailable", async () => {
+    const { classifyOAuthError } = await import("./github-oauth");
+    expect(classifyOAuthError(new Error("DrizzleQueryError: connect ETIMEDOUT"))).toBe("database_unavailable");
+  });
+
+  it("keeps unrelated failures as internal_error", async () => {
+    const { classifyOAuthError } = await import("./github-oauth");
+    expect(classifyOAuthError(new Error("unexpected callback failure"))).toBe("internal_error");
+  });
+});

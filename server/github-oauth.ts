@@ -9,6 +9,11 @@ const stateSecret = () => ENV.jwtSecret || "devflow-development-state-secret";
 function signState(value: string) { const signature = crypto.createHmac("sha256", stateSecret()).update(value).digest("hex"); return `${value}.${signature}`; }
 function verifyState(value: string) { const parts = value.split("."); if (parts.length < 2) return null; const raw = parts.slice(0, -1).join("."); const expected = crypto.createHmac("sha256", stateSecret()).update(raw).digest("hex"); return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(parts.at(-1)!)) ? raw : null; }
 
+export function classifyOAuthError(error: unknown): "database_unavailable" | "internal_error" {
+  const message = error instanceof Error ? `${error.message} ${error.cause instanceof Error ? error.cause.message : ""}` : String(error);
+  return /(database|mysql|drizzle|ECONNREFUSED|ETIMEDOUT|ER_[A-Z_]+)/i.test(message) ? "database_unavailable" : "internal_error";
+}
+
 // TODO: Encrypt access token at rest. Currently storing plaintext for development.
 // In production, use a KMS-backed secret or encryption library like crypto-js.
 function encryptAccessToken(token: string): string {
@@ -177,7 +182,7 @@ export function registerGithubOAuth(app: Express) {
     } catch (error) {
       console.error("[GitHub OAuth] Unexpected error during callback:", error);
       const frontendUrl = ENV.frontendUrl;
-      return res.redirect(`${frontendUrl}/auth/error?code=internal_error`);
+      return res.redirect(`${frontendUrl}/auth/error?code=${classifyOAuthError(error)}`);
     }
   });
 }
