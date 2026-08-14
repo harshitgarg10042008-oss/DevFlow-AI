@@ -170,3 +170,8 @@ All application code, configuration-safe integration routes, data models, UI wor
 - [x] Add route-level tests for dataset CRUD, sample listing/creation, and evaluation summary
 - [x] Add worker-level tests for CODEOWNERS assignment persistence and owner-targeted notifications
 - [x] Re-run and record the production build after the latest fixes
+
+## Windows compatibility fix
+
+- [x] Replace Unix-only NODE_ENV assignment in the development script with a cross-platform startup command
+- [x] Verify the Windows-compatible script and push the fix to GitHub
