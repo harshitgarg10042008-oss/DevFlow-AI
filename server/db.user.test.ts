@@ -1,17 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { upsertUser, getUserByOpenId } from "./db";
-import { getDb } from "./db";
+import { getDb } from "./db-connection";
 import { users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 
-// Mock the database
-vi.mock("./db", async () => {
-  const actual = await vi.importActual<typeof import("./db")>("./db");
-  return {
-    ...actual,
-    getDb: vi.fn(),
-  };
-});
+vi.mock("./db-connection", () => ({
+  getDb: vi.fn(),
+}));
+
+vi.mock("./_core/env", () => ({
+  ENV: { ownerOpenId: "owner_123" },
+}));
 
 describe("User Upsert Logic", () => {
   const mockDb = {
@@ -134,11 +133,6 @@ describe("User Upsert Logic", () => {
         onDuplicateKeyUpdate: vi.fn().mockResolvedValue(undefined),
       };
       mockDb.insert.mockReturnValue(mockInsert);
-
-      // Mock ENV to have ownerOpenId
-      vi.mock("./_core/env", () => ({
-        ENV: { ownerOpenId: "owner_123" },
-      }));
 
       const userData = {
         openId: "owner_123",

@@ -196,3 +196,10 @@ All application code, configuration-safe integration routes, data models, UI wor
 - [x] Add regression coverage for webhook retry-after-crash/idempotency behavior
 - [x] Add regression coverage for GitHub rate-limit and Retry-After backoff behavior
 - [x] Commit and push the recommendation follow-up corrections and record the new release commit
+
+## Audit follow-up blockers
+
+- [x] Inspect and fix the 10 failing `db.user.test.ts` mock/setup tests
+- [x] Reconcile server port, `FRONTEND_URL`, OAuth callback, documentation, and local startup commands
+- [x] Re-run the complete 66-test suite, typecheck, production build, and startup health check
+- [x] Confirm the corrected release commit is pushed to GitHub

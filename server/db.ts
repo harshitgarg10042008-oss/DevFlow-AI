@@ -1,16 +1,9 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
 import { ENV } from "./_core/env";
+import { getDb } from "./db-connection";
+export { getDb } from "./db-connection";
 import { InsertUser, analyses, auditLogs, branches, commits, findingFeedback, findings, githubConnections, notifications, pullRequestRevisions, pullRequests, repositories, users, webhookDeliveries, workspaceMembers, workspaces } from "../drizzle/schema";
 import type { AnalysisStatus, FindingFeedback, PrecheckResult } from "@shared/devflow-contracts";
-
-let _db: ReturnType<typeof drizzle> | null = null;
-export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
-    try { _db = drizzle(process.env.DATABASE_URL); } catch (error) { console.warn("[Database] Failed to connect:", error); }
-  }
-  return _db;
-}
 
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");
