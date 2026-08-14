@@ -52,7 +52,7 @@ cd DevFlow-AI
 pnpm install
 ```
 
-The repository intentionally does not contain real credentials. Create a local `.env` file from the inventory above and keep it untracked. If an `.env.example` file is not present in the checkout, create `.env` directly; the server reads the variables from the process environment supplied by the runtime.
+The repository intentionally does not contain real credentials. Create a local `.env` file from the inventory above and keep it untracked. If an `.env.example` file is not present in the checkout, create `.env` directly; the server reads the variables from the process environment supplied by the runtime. **This project uses the MySQL/TiDB driver, so `DATABASE_URL` must begin with `mysql://`; PostgreSQL URLs are not supported.**
 
 ## Database and local services
 
@@ -72,7 +72,7 @@ Start the development server with hot reload:
 pnpm dev
 ```
 
-The application serves the dashboard at `http://localhost:3000`. Validate types and run the test suite with:
+The application serves the dashboard at `http://localhost:${PORT}` (use the `PORT` value from `.env`; if omitted, the default is `3000`). Validate types and run the test suite with:
 
 ```bash
 pnpm check
