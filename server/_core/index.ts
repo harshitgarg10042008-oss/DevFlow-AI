@@ -18,6 +18,27 @@ function isPortAvailable(port: number): Promise<boolean> { return new Promise(re
 async function findAvailablePort(startPort = 3000) { for (let port = startPort; port < startPort + 20; port++) if (await isPortAvailable(port)) return port; throw new Error("No available port found"); }
 
 async function startServer() {
+  // Startup diagnostics
+  const requiredVars = ["DATABASE_URL", "JWT_SECRET"];
+  const missingVars = requiredVars.filter(varName => !process.env[varName]);
+  if (missingVars.length > 0) {
+    console.error("[Startup] Missing required environment variables:", missingVars.join(", "));
+    console.error("[Startup] Please set these variables in your .env file and restart the server.");
+    process.exit(1);
+  }
+
+  const optionalVars = {
+    "GITHUB_CLIENT_ID": "GitHub OAuth",
+    "GITHUB_CLIENT_SECRET": "GitHub OAuth",
+    "GITHUB_OAUTH_REDIRECT_URI": "GitHub OAuth",
+    "REDIS_URL": "BullMQ distributed workers",
+  };
+  const missingOptional = Object.entries(optionalVars).filter(([key]) => !process.env[key]);
+  if (missingOptional.length > 0) {
+    console.warn("[Startup] Optional features disabled (missing env vars):");
+    missingOptional.forEach(([key, feature]) => console.warn(`  - ${key}: ${feature}`));
+  }
+
   const app = express();
   const server = createServer(app);
   app.disable("x-powered-by");

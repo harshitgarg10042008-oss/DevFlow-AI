@@ -15,4 +15,5 @@ export const ENV = {
   redisUrl: process.env.REDIS_URL ?? "",
   aiModel: process.env.DEVFLOW_AI_MODEL ?? "built-in-default",
   aiDailyTokenCap: Number(process.env.DEVFLOW_AI_DAILY_TOKEN_CAP ?? 200000),
+  frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:3000",
 };

@@ -78,7 +78,8 @@ export function registerGithubOAuth(app: Express) {
         access_denied: "access_denied",
       };
       const safeErrorCode = errorCodes[error] || "oauth_error";
-      return res.redirect(`http://localhost:3000/auth/error?code=${safeErrorCode}`);
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      return res.redirect(`${frontendUrl}/auth/error?code=${safeErrorCode}`);
     }
 
     if (!ENV.githubClientId || !ENV.githubClientSecret || !ENV.githubOAuthRedirectUri) {
@@ -88,12 +89,14 @@ export function registerGithubOAuth(app: Express) {
 
     if (!code) {
       console.error("[GitHub OAuth] Missing authorization code");
-      return res.redirect("http://localhost:3000/auth/error?code=missing_code");
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      return res.redirect(`${frontendUrl}/auth/error?code=missing_code`);
     }
 
     if (!verifyState(state)) {
       console.error("[GitHub OAuth] Invalid state parameter");
-      return res.redirect("http://localhost:3000/auth/error?code=invalid_state");
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      return res.redirect(`${frontendUrl}/auth/error?code=invalid_state`);
     }
 
     try {
@@ -111,20 +114,23 @@ export function registerGithubOAuth(app: Express) {
 
       if (!tokenResponse.ok) {
         console.error("[GitHub OAuth] Token exchange failed:", tokenResponse.status);
-        return res.redirect("http://localhost:3000/auth/error?code=token_exchange_failed");
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        return res.redirect(`${frontendUrl}/auth/error?code=token_exchange_failed`);
       }
 
       const token = await tokenResponse.json() as { access_token?: string };
       if (!token.access_token) {
         console.error("[GitHub OAuth] No access token in response");
-        return res.redirect("http://localhost:3000/auth/error?code=no_token");
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        return res.redirect(`${frontendUrl}/auth/error?code=no_token`);
       }
 
       // Fetch GitHub user info
       const githubUser = await fetchGitHubUser(token.access_token);
       if (!githubUser) {
         console.error("[GitHub OAuth] Failed to fetch GitHub user");
-        return res.redirect("http://localhost:3000/auth/error?code=user_fetch_failed");
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        return res.redirect(`${frontendUrl}/auth/error?code=user_fetch_failed`);
       }
 
       // Upsert user to database using GitHub ID as openId
@@ -140,7 +146,8 @@ export function registerGithubOAuth(app: Express) {
       const user = await db.getUserByOpenId(openId);
       if (!user) {
         console.error("[GitHub OAuth] Failed to retrieve user after upsert");
-        return res.redirect("http://localhost:3000/auth/error?code=user_creation_failed");
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        return res.redirect(`${frontendUrl}/auth/error?code=user_creation_failed`);
       }
 
       // Store GitHub access token in database (encrypted)
@@ -165,10 +172,12 @@ export function registerGithubOAuth(app: Express) {
       console.log("[GitHub OAuth] Successfully authenticated user:", githubUser.login, "ID:", user.id);
 
       // Redirect to frontend dashboard
-      res.redirect("http://localhost:3000/dashboard");
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      res.redirect(`${frontendUrl}/dashboard`);
     } catch (error) {
       console.error("[GitHub OAuth] Unexpected error during callback:", error);
-      return res.redirect("http://localhost:3000/auth/error?code=internal_error");
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      return res.redirect(`${frontendUrl}/auth/error?code=internal_error`);
     }
   });
 }
