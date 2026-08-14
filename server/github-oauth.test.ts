@@ -155,3 +155,16 @@ describe("OAuth callback error classification", () => {
     expect(classifyOAuthError(new Error("unexpected callback failure"))).toBe("internal_error");
   });
 });
+
+
+describe("OAuth missing-user fallback", () => {
+  it("uses database_unavailable when the database helper is absent", async () => {
+    const { classifyMissingUser } = await import("./github-oauth");
+    expect(classifyMissingUser(false)).toBe("database_unavailable");
+  });
+
+  it("keeps user_creation_failed when the database is available", async () => {
+    const { classifyMissingUser } = await import("./github-oauth");
+    expect(classifyMissingUser(true)).toBe("user_creation_failed");
+  });
+});

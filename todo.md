@@ -218,3 +218,10 @@ All application code, configuration-safe integration routes, data models, UI wor
 - [x] Add database-specific OAuth error classification and regression coverage
 - [x] Run the full 68-test suite, typecheck, and production build
 - [ ] Rotate the credentials exposed in the local incident before live verification
+
+## OAuth fallback branch correction
+
+- [x] Classify a missing post-upsert user as `database_unavailable` when the database helper is unavailable
+- [x] Add regression coverage for the safe no-user database branch
+- [x] Run the full 70-test suite, typecheck, and production build
+- [ ] Restart the local Windows server from the new commit before live OAuth verification

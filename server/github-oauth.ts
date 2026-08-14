@@ -14,6 +14,10 @@ export function classifyOAuthError(error: unknown): "database_unavailable" | "in
   return /(database|mysql|drizzle|ECONNREFUSED|ETIMEDOUT|ER_[A-Z_]+)/i.test(message) ? "database_unavailable" : "internal_error";
 }
 
+export function classifyMissingUser(databaseAvailable: boolean): "database_unavailable" | "user_creation_failed" {
+  return databaseAvailable ? "user_creation_failed" : "database_unavailable";
+}
+
 // TODO: Encrypt access token at rest. Currently storing plaintext for development.
 // In production, use a KMS-backed secret or encryption library like crypto-js.
 function encryptAccessToken(token: string): string {
@@ -151,8 +155,10 @@ export function registerGithubOAuth(app: Express) {
       const user = await db.getUserByOpenId(openId);
       if (!user) {
         console.error("[GitHub OAuth] Failed to retrieve user after upsert");
+        const database = await db.getDb();
         const frontendUrl = ENV.frontendUrl;
-        return res.redirect(`${frontendUrl}/auth/error?code=user_creation_failed`);
+        const errorCode = classifyMissingUser(Boolean(database));
+        return res.redirect(`${frontendUrl}/auth/error?code=${errorCode}`);
       }
 
       // Store GitHub access token in database (encrypted)
