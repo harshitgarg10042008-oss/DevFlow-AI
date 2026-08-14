@@ -46,4 +46,5 @@ export function getSessionCookieOptions(
     sameSite: secure ? "none" : "lax",
     secure,
   };
+
 }
