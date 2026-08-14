@@ -225,3 +225,9 @@ All application code, configuration-safe integration routes, data models, UI wor
 - [x] Add regression coverage for the safe no-user database branch
 - [x] Run the full 70-test suite, typecheck, and production build
 - [ ] Restart the local Windows server from the new commit before live OAuth verification
+
+## Database health diagnostic follow-up
+
+- [x] Add direct user-facing guidance for MySQL/TiDB reachability and migration readiness
+- [x] Run the complete 70-test suite, typecheck, and production build
+- [ ] Start a reachable local MySQL/TiDB service and complete live OAuth verification

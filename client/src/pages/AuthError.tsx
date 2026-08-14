@@ -10,6 +10,7 @@ const errorMessages: Record<string, string> = {
   no_token: "GitHub did not return an access token. Please try again.",
   user_fetch_failed: "Failed to fetch your GitHub user information. Please try again.",
   user_creation_failed: "Failed to create your account. Please try again or contact support.",
+  database_unavailable: "The application cannot reach its MySQL/TiDB database. Set DATABASE_URL to a reachable mysql:// URL, start MySQL, run pnpm db:push, and restart the server before trying GitHub login again.",
   oauth_error: "An OAuth error occurred. Please try again.",
   internal_error: "An internal server error occurred. Please try again later.",
 };
