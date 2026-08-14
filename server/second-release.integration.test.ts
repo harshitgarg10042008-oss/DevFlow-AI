@@ -25,15 +25,25 @@ describe("DevFlow second-release integration contracts", () => {
 });
 
 import { createEvaluationDataset, saveReviewerAssignment } from "./second-release-db";
+import { resetDbForTests } from "./db-connection";
 import { selectOwnerRecipientIds } from "./second-release";
 
 
 describe("second-release persistence and routing fallbacks", () => {
   it("returns stable safe records when persistence is not configured", async () => {
-    const dataset = await createEvaluationDataset({ workspaceId: 1, name: "qa", description: "managed" });
-    const assignment = await saveReviewerAssignment({ pullRequestId: 2, repositoryId: 3, owner: "alice", source: "CODEOWNERS", status: "RECOMMENDED" });
-    expect(dataset?.id).toBeTypeOf("number");
-    expect(assignment?.id).toBeTypeOf("number");
+    const previousDatabaseUrl = process.env.DATABASE_URL;
+    delete process.env.DATABASE_URL;
+    resetDbForTests();
+    try {
+      const dataset = await createEvaluationDataset({ workspaceId: 1, name: "qa", description: "managed" });
+      const assignment = await saveReviewerAssignment({ pullRequestId: 2, repositoryId: 3, owner: "alice", source: "CODEOWNERS", status: "RECOMMENDED" });
+      expect(dataset?.id).toBeTypeOf("number");
+      expect(assignment?.id).toBeTypeOf("number");
+    } finally {
+      if (previousDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+      else process.env.DATABASE_URL = previousDatabaseUrl;
+      resetDbForTests();
+    }
   });
 
   it("routes CODEOWNERS handles to matching workspace users and falls back to all members", () => {

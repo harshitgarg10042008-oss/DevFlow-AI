@@ -203,3 +203,11 @@ All application code, configuration-safe integration routes, data models, UI wor
 - [x] Reconcile server port, `FRONTEND_URL`, OAuth callback, documentation, and local startup commands
 - [x] Re-run the complete 66-test suite, typecheck, production build, and startup health check
 - [x] Confirm the corrected release commit is pushed to GitHub
+
+## Ordered non-secret runtime fixes
+
+- [x] Make OAuth error redirects derive their origin from `FRONTEND_URL` or the configured `PORT`
+- [x] Validate MySQL/TiDB `DATABASE_URL` and bound database connection initialization failures
+- [x] Make Redis-unavailable diagnostics clear and rate-limited
+- [x] Verify the complete test suite and production build after runtime corrections
+- [ ] Rotate all credentials exposed in the local incident before live verification

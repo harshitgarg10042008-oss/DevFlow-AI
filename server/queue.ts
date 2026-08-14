@@ -10,6 +10,14 @@ import { latestLifecycleForFingerprint, latestReviewPolicy, listCodeOwners, list
 export const analysisQueueName = "devflow-analysis";
 const connection = ENV.redisUrl ? { url: ENV.redisUrl, maxRetriesPerRequest: null } : null;
 export const analysisQueue = connection ? new Queue(analysisQueueName, { connection }) : null;
+let lastRedisWarningAt = 0;
+function reportRedisUnavailable(error: unknown) {
+  const now = Date.now();
+  if (now - lastRedisWarningAt < 30_000) return;
+  lastRedisWarningAt = now;
+  console.warn("[Redis] BullMQ is unavailable; background analysis will use safe inline fallback where possible:", error instanceof Error ? error.message : "connection failed");
+}
+if (analysisQueue) analysisQueue.on("error", reportRedisUnavailable);
 
 export function deterministicJobId(repositoryId: number, pullRequestNumber: number, headSha: string) { return `analysis:${repositoryId}:pr-${pullRequestNumber}:${headSha}`; }
 export function buildReviewerAssignments(ownerNames: string[], workspaceMembers: Array<{ userId: number; name: string | null; email: string | null }>, pullRequestId: number, repositoryId: number) { return ownerNames.map(owner => { const matchedMember = workspaceMembers.find(member => [member.name, member.email].filter(Boolean).some(value => value!.toLowerCase().replace(/^@/, "") === owner)); return { pullRequestId, repositoryId, owner, userId: matchedMember?.userId, source: "CODEOWNERS" as const, status: matchedMember ? "ASSIGNED" as const : "RECOMMENDED" as const }; }); }
@@ -85,5 +93,6 @@ export function startAnalysisWorker() {
   if (!connection) return null;
   const worker = new Worker(analysisQueueName, processAnalysis, { connection, concurrency: 2 });
   worker.on("failed", (job, error) => console.error(`[Worker] Analysis ${job?.id} failed`, error));
+  worker.on("error", reportRedisUnavailable);
   return worker;
 }

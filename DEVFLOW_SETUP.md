@@ -124,3 +124,11 @@ Webhook deliveries are persisted by GitHub delivery ID. Processed deliveries ret
 Benchmark datasets persist their `BENCHMARK` type and target precision, recall, and false-positive thresholds. Samples persist whether they are `CLEAN` or `INJECTED_ISSUE` and may store expected finding categories, allowing benchmark definitions to survive worker restarts and be managed through the protected evaluation procedures.
 
 When `REDIS_URL` is configured, daily AI token accounting is shared across worker processes using Redis keys scoped by workspace and UTC day. If Redis is unavailable, credential-free development falls back to a process-local guard and continues returning deterministic findings rather than failing the review. For production, configure Redis so the cap is shared across instances.
+
+## Local runtime diagnostics and port alignment
+
+The server uses `PORT` for its listening port and derives OAuth error and success redirects from `FRONTEND_URL`; when `FRONTEND_URL` is omitted, the default origin follows `PORT` and otherwise uses `http://localhost:3000`. Keep the browser URL, `FRONTEND_URL`, and `GITHUB_OAUTH_REDIRECT_URI` on the same port.
+
+The application uses the MySQL/TiDB Drizzle driver. `DATABASE_URL` must use the `mysql://` scheme. Local database initialization validates the scheme and uses a bounded connection timeout so a missing or unreachable database produces a clear diagnostic instead of an opaque OAuth internal error.
+
+When `REDIS_URL` is configured but Redis is unavailable, BullMQ diagnostics are rate-limited and the application reports that distributed background processing is unavailable. Start Redis before relying on distributed analysis workers; credential-free inline fallback remains available where supported.
