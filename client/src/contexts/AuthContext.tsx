@@ -37,8 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logoutMutation = trpc.auth.logout.useMutation();
 
   useEffect(() => {
-    if (authMe.data) {
-      setUser(authMe.data as User);
+    if (authMe.data !== undefined) {
+      setUser(authMe.data as User | null);
       setIsLoading(false);
       setError(null);
     } else if (authMe.error) {

@@ -4,6 +4,7 @@ import { ENV } from "./_core/env";
 import { sdk } from "./_core/sdk";
 import * as db from "./db";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { COOKIE_NAME } from "@shared/const";
 
 const stateSecret = () => ENV.jwtSecret || "devflow-development-state-secret";
 function signState(value: string) { const signature = crypto.createHmac("sha256", stateSecret()).update(value).digest("hex"); return `${value}.${signature}`; }
@@ -178,7 +179,7 @@ export function registerGithubOAuth(app: Express) {
 
       // Set session cookie
       const cookieOptions = getSessionCookieOptions(req);
-      res.cookie("devflow_session", sessionToken, cookieOptions);
+      res.cookie(COOKIE_NAME, sessionToken, cookieOptions);
 
       console.log("[GitHub OAuth] Successfully authenticated user:", githubUser.login, "ID:", user.id);
 
