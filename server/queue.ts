@@ -1,6 +1,6 @@
 import { Queue, Worker, type Job } from "bullmq";
 import { ENV } from "./_core/env";
-import { addNotification, createAnalysis, getAnalysis, getPullRequest, getRepository, listWorkspaceMemberIds, listWorkspaceMembers, saveFindings, updateAnalysis } from "./db";
+import { addNotification, createAnalysis, getAnalysis, getGithubConnectionForWorkspace, getPullRequest, getRepository, listWorkspaceMemberIds, listWorkspaceMembers, saveFindings, updateAnalysis } from "./db";
 import { getFileContent, getPullRequestDiff, getPullRequestFiles } from "./github";
 import { normalizeReviewFindings, runAIReview } from "./ai-reviewer";
 import { publishEvent } from "./events";
@@ -31,7 +31,8 @@ async function processAnalysis(job: Job<{ analysisId: number; repositoryId: numb
     const repository = await getRepository(job.data.repositoryId);
     const pullRequest = await getPullRequestByNumber(job.data.repositoryId, job.data.pullRequestNumber);
     if (!repository || !pullRequest) throw new Error("Repository or pull request not found");
-    const token = process.env.GITHUB_ACCESS_TOKEN || "";
+    const githubConnection = await getGithubConnectionForWorkspace(repository.workspaceId);
+    const token = githubConnection?.accessToken || "";
     const files = token ? await getPullRequestFiles(token, repository.owner, repository.name, pullRequest.number) : [];
     const diff = token ? await getPullRequestDiff(token, repository.owner, repository.name, pullRequest.number) : "";
     const changedFiles = files.map(file => ({ filename: file.filename, patch: file.patch, status: file.status, additions: file.additions, deletions: file.deletions }));
