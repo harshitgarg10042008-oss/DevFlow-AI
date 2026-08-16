@@ -6,7 +6,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { ENV } from "./_core/env";
 import { createGithubCheckRun, createPullRequestReviewComment, listAccessibleRepositories, getRepositoryBranches, getRepositoryCommits, getRepositoryPullRequests } from "./github";
-import { addNotification, canAccessWorkspace, dashboardStats, disconnectRepository, ensureWorkspace, getAnalysis, getGithubConnection, getPullRequest, getRepository, listAnalysesForRepository, listFindings, listNotifications, listPullRequests, listRepositories, listUserWorkspaces, markNotificationRead, setFindingFeedback, upsertGithubConnection, connectRepository, updateRepositorySync, upsertBranch, upsertCommit, listBranches, listCommits } from "./db";
+import { addNotification, canAccessWorkspace, dashboardStats, disconnectRepository, ensureWorkspace, getAnalysis, getAnalysisContext, getGithubConnection, getPullRequest, getRepository, listAnalysesForRepository, listFindings, listNotifications, listPullRequests, listRepositories, listUserWorkspaces, markNotificationRead, setFindingFeedback, upsertGithubConnection, connectRepository, updateRepositorySync, upsertBranch, upsertCommit, listBranches, listCommits } from "./db";
 import { enqueueAnalysis } from "./queue";
 import { feedbackSchema } from "@shared/devflow-contracts";
 import { architectureModules, deriveFindingLifecycle, findingFingerprint, impactedTests, normalizePolicy, ownerMatches, parseCodeowners, policyBlocksFindings, safeExternalAdapter } from "./second-release";
@@ -52,6 +52,7 @@ export const appRouter = router({
   }),
   analysis: router({
     detail: protectedProcedure.input(z.object({ analysisId: z.number().int().positive() })).query(async ({ ctx, input }) => { const analysis = await getAnalysis(input.analysisId); if (!analysis) throw new Error("Analysis not found"); const findings = await listFindings(input.analysisId); return { analysis, findings }; }),
+    retry: protectedProcedure.input(z.object({ analysisId: z.number().int().positive() })).mutation(async ({ ctx, input }) => { const context = await getAnalysisContext(input.analysisId); if (!context) throw new Error("Analysis context not found"); await assertWorkspace(ctx.user.id, context.repository.workspaceId); if (context.analysis.status !== "FAILED") throw new Error("Only failed analyses can be retried"); return enqueueAnalysis({ repositoryId: context.repository.id, pullRequestId: context.pullRequest.id, pullRequestNumber: context.pullRequest.number, headSha: context.pullRequest.headSha, baseSha: context.pullRequest.baseSha, changedFilesCount: context.pullRequest.changedFiles, additions: context.pullRequest.additions, deletions: context.pullRequest.deletions }); }),
   }),
   finding: router({
     feedback: protectedProcedure.input(z.object({ findingId: z.number().int().positive(), feedback: feedbackSchema })).mutation(async ({ ctx, input }) => { await setFindingFeedback(input.findingId, ctx.user.id, input.feedback); await updateFindingLifecycleStatus(input.findingId, input.feedback === "Accept" ? "ACCEPTED" : input.feedback === "Dismiss" ? "DISMISSED" : "INACCURATE"); return { success: true, feedback: input.feedback }; }),
