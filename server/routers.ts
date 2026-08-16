@@ -6,7 +6,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { ENV } from "./_core/env";
 import { createGithubCheckRun, createPullRequestReviewComment, listAccessibleRepositories, getRepositoryBranches, getRepositoryCommits, getRepositoryPullRequests } from "./github";
-import { addNotification, canAccessWorkspace, dashboardStats, disconnectRepository, ensureWorkspace, getAnalysis, getAnalysisContext, getGithubConnection, getPullRequest, getRepository, listAnalysesForRepository, listFindings, listNotifications, listPullRequests, listRepositories, listUserWorkspaces, markNotificationRead, setFindingFeedback, upsertGithubConnection, connectRepository, updateRepositorySync, upsertBranch, upsertCommit, listBranches, listCommits } from "./db";
+import { addNotification, canAccessWorkspace, dashboardStats, disconnectRepository, ensureWorkspace, getAnalysis, getAnalysisContext, getGithubConnection, getPullRequest, getRepository, listAnalysesForRepository, listFindings, listNotifications, listPullRequests, listRepositories, listUserWorkspaces, listWorkspaceMembers, markNotificationRead, setFindingFeedback, upsertGithubConnection, connectRepository, updateRepositorySync, upsertBranch, upsertCommit, listBranches, listCommits } from "./db";
 import { enqueueAnalysis } from "./queue";
 import { feedbackSchema } from "@shared/devflow-contracts";
 import { architectureModules, deriveFindingLifecycle, findingFingerprint, impactedTests, normalizePolicy, ownerMatches, parseCodeowners, policyBlocksFindings, safeExternalAdapter } from "./second-release";
@@ -28,6 +28,7 @@ export const appRouter = router({
   workspace: router({
     list: protectedProcedure.query(({ ctx }) => listUserWorkspaces(ctx.user.id)),
     bootstrap: protectedProcedure.mutation(({ ctx }) => ensureWorkspace(ctx.user.id, defaultWorkspaceName(ctx.user.name))),
+    members: protectedProcedure.input(workspaceInput).query(async ({ ctx, input }) => { await assertWorkspace(ctx.user.id, input.workspaceId); return listWorkspaceMembers(input.workspaceId); }),
   }),
   github: router({
     status: protectedProcedure.query(async ({ ctx }) => ({ configured: Boolean(ENV.githubClientId), connected: Boolean(await getGithubConnection(ctx.user.id)) })),
