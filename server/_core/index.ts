@@ -42,6 +42,7 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
   app.disable("x-powered-by");
+  app.get("/api/health", (_req, res) => res.json({ status: "ok", service: "devflow-ai", time: new Date().toISOString() }));
   app.use((req, res, next) => { const requestId = crypto.randomUUID(); res.setHeader("x-request-id", requestId); res.setHeader("x-content-type-options", "nosniff"); res.setHeader("x-frame-options", "DENY"); res.setHeader("referrer-policy", "same-origin"); res.setHeader("content-security-policy", "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval'"); const started = Date.now(); res.on("finish", () => { if (!req.path.includes("/oauth/callback")) console.info(JSON.stringify({ event: "http_request", requestId, method: req.method, path: req.path, status: res.statusCode, durationMs: Date.now() - started })); }); next(); });
   app.post("/api/webhooks/github", rateLimit(30), express.raw({ type: "application/json", limit: "5mb" }));
   app.use("/api/trpc", rateLimit(240));

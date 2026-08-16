@@ -1,0 +1,21 @@
+{
+  "name": "devflow-ai",
+  "displayName": "DevFlow AI",
+  "description": "Open DevFlow AI workflows from VS Code.",
+  "version": "0.1.0",
+  "publisher": "devflow-ai",
+  "engines": { "vscode": ">=1.85.0" },
+  "main": "./extension.js",
+  "activationEvents": ["onCommand:devflow.openDashboard", "onCommand:devflow.healthCheck"],
+  "contributes": {
+    "commands": [
+      { "command": "devflow.openDashboard", "title": "DevFlow AI: Open Dashboard" },
+      { "command": "devflow.healthCheck", "title": "DevFlow AI: Check Service Health" }
+    ],
+    "configuration": {
+      "properties": {
+        "devflow.url": { "type": "string", "default": "http://localhost:4000", "description": "DevFlow AI service URL." }
+      }
+    }
+  }
+}
