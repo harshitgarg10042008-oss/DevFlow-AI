@@ -19,7 +19,7 @@ function reportRedisUnavailable(error: unknown) {
 }
 if (analysisQueue) analysisQueue.on("error", reportRedisUnavailable);
 
-export function deterministicJobId(repositoryId: number, pullRequestNumber: number, headSha: string) { return `analysis:${repositoryId}:pr-${pullRequestNumber}:${headSha}`; }
+export function deterministicJobId(repositoryId: number, pullRequestNumber: number, headSha: string) { return `analysis-${repositoryId}-pr-${pullRequestNumber}-${headSha}`; }
 export function buildReviewerAssignments(ownerNames: string[], workspaceMembers: Array<{ userId: number; name: string | null; email: string | null }>, pullRequestId: number, repositoryId: number) { return ownerNames.map(owner => { const matchedMember = workspaceMembers.find(member => [member.name, member.email].filter(Boolean).some(value => value!.toLowerCase().replace(/^@/, "") === owner)); return { pullRequestId, repositoryId, owner, userId: matchedMember?.userId, source: "CODEOWNERS" as const, status: matchedMember ? "ASSIGNED" as const : "RECOMMENDED" as const }; }); }
 
 async function processAnalysis(job: Job<{ analysisId: number; repositoryId: number; pullRequestNumber: number; headSha: string }>) {
